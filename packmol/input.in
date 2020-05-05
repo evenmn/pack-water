@@ -1,7 +1,0 @@
-tolerance 2.0
-output packmol/water_packmol.data
-filetype xyz
-structure packmol/water.xyz
-  number 2000
-  inside cube 0. 0. 0. 38.13775229192892
-end structure
