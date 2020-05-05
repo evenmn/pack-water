@@ -2,7 +2,15 @@
 This is a package for water packing, which relies on [the Packmol package](http://m3g.iqm.unicamp.br/packmol/home.shtml). This is ment to be used as input to LAMMPS for molecular dynamics simulations. The inputs are number of molecules, length of box of density of water and whether or not the packed water should support periodic boundary conditions. However, the package supports cubic shapes only. 
 
 ## Installation
-
+First download the contents:
+``` bash
+$ git clone https://github.com/evenmn/pack-water.git
+```
+and then install pack-water:
+``` bash
+$ cd pack-water
+$ pip install .
+```
 
 ## Prerequisites
 - [Packmol](http://m3g.iqm.unicamp.br/packmol/home.shtml)
