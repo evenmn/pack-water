@@ -10,6 +10,9 @@ class PackWater:
         lencube : float
             length of packed cube given in Å (Ångstrøm).
         """
+        self.nummol = nummol
+        
+        # Convert from density to length of box
         if lencube is None and density is None:
             raise Warning("Warning! Neither lencube nor density is given, continue with density 1 g/cm^3")
             density = 1.0
@@ -19,8 +22,16 @@ class PackWater:
             lencube = self.den2len(density=density)
         elif density is not None:
             lencube = self.den2len(density=density)
-        self.nummol = nummol
+        
         self.lencube = lencube
+        
+        # Store all "hidden" files in data_files
+        import os
+        this_dir, this_filename = os.path.split(__file__)
+        self.packmol_input  = this_dir + "/data_files/input.in"
+        self.packmol_data   = this_dir + "/data_files/water_packmol.data"
+        self.structure_data = this_dir + "/data_files/water.xyz"
+
         
     def den2len(self, density):
         """ Returns the length of the cube given the density.
@@ -40,59 +51,40 @@ class PackWater:
         return lencube
         
         
-    def packmol_gen(self, infile="packmol/input.in", 
-                          outfile="packmol/water_packmol.data", 
-                          filetype="xyz",
-                          structure="water.xyz",
-                          tolerance=2.0,
-                          pbc=None):
+    def generate_packmol_input(self, tolerance=2.0, pbc=None):
         """ Generate Packmol input script. 
         
         Parameters
         ----------
-        infile : str
-            file that we write to.
-        outfile : str
-            file generated when running packmol script.
-        filetype : str
-            type of output file. Must match structure file.
-        structure : str
-            file that determines the structure of a single water molecule.
         tolerance str
             minimum distance between molecules. 2.0 default.
         pbc : float
             width of gap at boundary given in [Å].
         """
         
-        import os
-        try:
-            # Create target Directory
-            os.makedirs("packmol")
-            #print("Directory ", path, " created")
-        except FileExistsError:
-            pass
-            #print("Directory ", path, " already exists")
-        
-        self.infile = infile
-        self.outfile = outfile
-        self.lenbox = self.lencube      # lencube is length of water bulk
+        self.lenbox = self.lencube
         if pbc is not None:
             self.lencube -= pbc
-            
         
-        
-        f = open(infile, "w")
+        f = open(self.packmol_input, "w")
         f.write("tolerance {}\n".format(tolerance))
-        f.write("output {}\n".format(outfile))
-        f.write("filetype {}\n".format(filetype))
-        f.write("structure {}\n".format(structure))
+        f.write("output {}\n".format(self.packmol_data))
+        f.write("filetype xyz\n")
+        f.write("structure {}\n".format(self.structure_data))
         f.write("  number {}\n".format(self.nummol))
         f.write("  inside cube 0. 0. 0. {}\n".format(self.lencube))
         f.write("end structure\n")
         f.close()
-        print("Generated file " + infile)
         
-    def xyz2lmp(self, out="../data/water_lmps.data"):
+    def run_packmol(self):
+        """ Run packmol.
+        """
+        
+        from os import system
+        call_string = "packmol < {}".format(self.packmol_input)
+        system(call_string)
+        
+    def xyz2lmp(self, outfile):
         """ Convert the packmol outfile (on xyz filetype) to Lammps readable
         file.
         
@@ -101,42 +93,47 @@ class PackWater:
         out : str
             output file after converting.
         """
-        with open(out, 'w') as outfile:
+        
+        with open(outfile, 'w') as out:
             # Write header
-            outfile.write(out + " (Built by Packmol)\n\n")
-            outfile.write("{} atoms\n".format(3*self.nummol))
-            outfile.write("2 atom types\n")
-            outfile.write("0.0          {} xlo xhi\n".format(self.lenbox))
-            outfile.write("0.0          {} ylo yhi\n".format(self.lenbox))
-            outfile.write("0.0          {} zlo zhi\n\n".format(self.lenbox))
-            outfile.write("Atoms\n\n")
+            out.write(outfile + " (Built by Packmol)\n\n")
+            out.write("{} atoms\n".format(3 * self.nummol))
+            out.write("2 atom types\n")
+            out.write("0.0          {} xlo xhi\n".format(self.lenbox))
+            out.write("0.0          {} ylo yhi\n".format(self.lenbox))
+            out.write("0.0          {} zlo zhi\n\n".format(self.lenbox))
+            out.write("Atoms\n\n")
             # Write positions
-            with open(self.outfile, 'r') as infile:
+            with open(self.packmol_data, 'r') as infile:
                 for i, line in enumerate(infile):
                     if i > 1:
                         line = str(i-1) + line
                         line = line.replace("H", "1")
                         line = line.replace("O", "2")
-                        outfile.write(line)
-        print("Converted from xyz-filetype to LAMMPS-friendly filetype, {}".format(out))
+                        out.write(line)
         
     def __call__(self, outfile="water_config.data",
-                       filetype="lammps",
                        pbc=None,
                        tolerance=2.0):
         """ Run the Packmol input script generated by self.packmol_gen.
         """
-        self.packmol_gen(outfile=outfile, filetype="xyz", pbc=pbc, tolerance=tolerance)
         
-        from os import system
-        call_string = "packmol < {}".format(self.infile)
-        system(call_string)
-        print("Packmol script run and file {} generated".format(self.outfile))
+        # Generate Packmol input script
+        self.generate_packmol_input(pbc=pbc, tolerance=tolerance)
+        print("Generated file: " + self.packmol_input)
+        
+        # Run packmol
+        self.run_packmol()
+        print("Packmol script run and file {} generated"
+               .format(self.packmol_data))
+        
+        # Convert from xyz-format to lammps-format
+        self.xyz2lmp(outfile)
+        print("Converted from xyz-filetype to LAMMPS-friendly filetype, {}"
+               .format(outfile))
                     
 if __name__ == "__main__":
 
     ### EXAMPLE SCRIPT
     packer = PackWater(nummol=2000, density=0.998)
-    packer.packmol_gen(pbc=1.0)
     packer()
-    packer.xyz2lmp(out="water_lammps.data")

@@ -1,1 +1,1 @@
-include packmol/water.xyz
+include pack_water/data_files/water.xyz

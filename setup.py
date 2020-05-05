@@ -12,11 +12,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/evenmn/pack-water",
-    package_data={
-        "pack_water.data": [
-              "water.xyz",
-        ],
-    },
+    include_package_data=True,
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
