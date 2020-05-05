@@ -26,21 +26,21 @@ packer(outfile="water_10000mol_PBC.data", pbc=2.0)
 ```
 
 ### Number of molecules
-The number of molecules is specified by ```PackWater``` the argument ```nummol```:
+The number of molecules is specified by the ```PackWater``` argument ```nummol```:
 ``` python
 packer = PackWater(nummol=10000)
 ```
-This argument is required
+This argument is required.
 
 ### Box length
 Length of the box is specified by the ```PackWater``` argument ```lencube```:
 ``` python
 packer = PackWater(nummol=10000, lencube=0.39)
 ```
-This argument is optional
+This argument is optional.
 
 ### Water density
-The water density is specified by the PackWater argument ```density```:
+The water density is specified by the ```PackWater``` argument ```density```:
 ``` python
 packer = PackWater(nummol=10000, density=0.998)
 ```
@@ -58,7 +58,7 @@ If the LAMMPS script is using periodic boundary conditions, we should ensure tha
 ``` python
 packer(pbc=2.0)
 ```
-This argument is optional
+This argument is optional.
 
 ### Separation tolerance
 Initially, the molecules should be separated by a minimum distance, or a tolerance, to ensure that the potential energy is not too high. This minimum separation distance is specified by the ```__call__``` argument ```tolerance```:
