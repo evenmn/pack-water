@@ -5,4 +5,4 @@ periodic boundary condition
 from pack_water import PackWater
 
 packer = PackWater(nummol=10000, density=0.998)
-packer(outfile="water_10000mol_PBC.data")
+packer(outfile="water_10000mol_PBC.data", pbc=2.0)
