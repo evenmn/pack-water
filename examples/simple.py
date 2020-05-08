@@ -1,7 +1,9 @@
-""" Pack 2000 water molecules in a box of size 50 x 50 x 50 [Å³]. 
+""" Pack water molecules with density 0.998 in a box of size 357 x 143 x 143 [Å³]. 
 """
 
 from pack_water import PackWater
+from pack_water.geometry import BoxGeometry
 
-packer = PackWater(nummol=2000, lencube=50)
-packer(outfile="water_2000mol_NoPBC.data")
+packer = PackWater()
+packer.append(BoxGeometry(0, 0, 0, 357, 143, 143, density=0.998))
+packer(outfile="water.data")
