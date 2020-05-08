@@ -62,12 +62,12 @@ class CubeGeometry(Geometry):
         length of cube sides
     """
     def __init__(self, xlo, ylo, zlo, l, **kwargs):
-        super().__init__(**kwargs)
         self.length = l
         self.params = [xlo, ylo, zlo, l]
         self.label = 'cube'
         self.ll_corner = np.array([xlo, ylo, zlo])
         self.ur_corner = np.array([xlo + l, ylo + l, zlo + l])
+        super().__init__(**kwargs)
         
     def compute_volume(self):
         """ Returning volume of geometry
@@ -95,10 +95,10 @@ class BoxGeometry(Geometry):
     """
     def __init__(self, xlo, ylo, zlo, xhi, yhi, zhi, **kwargs):
         self.params = [xlo, ylo, zlo, xhi, yhi, zhi]
-        super().__init__(**kwargs)
         self.label = 'box'
         self.ll_corner = np.array([xlo, ylo, zlo])
         self.ur_corner = np.array([xhi, yhi, zhi])
+        super().__init__(**kwargs)
         
     def compute_volume(self):
         """ Returning volume of geometry
@@ -125,12 +125,12 @@ class SphereGeometry(Geometry):
         radius of sphere
     """
     def __init__(self, x, y, z, r, **kwargs):
-        super().__init__(**kwargs)
         self.radius = r
         self.params = [x, y, z, r]
         self.label = 'sphere'
         self.ll_corner = np.array([x - r, y - r, z - r])
         self.ur_corner = np.array([x + r, y + r, z + r])
+        super().__init__(**kwargs)
         
     def compute_volume(self):
         """ Returning volume of geometry
@@ -163,12 +163,12 @@ class EllipsoidGeometry(Geometry):
         radius
     """
     def __init__(self, x, y, z, a, b, c, r, **kwargs):
-        super().__init__(**kwargs)
         self.a, self.b, self.c = a, b, c
         self.params = [x, y, z, a, b, c, r]
         self.label = 'ellipsoid'
         self.ll_corner = np.array([x - a, y - b, z - b])
         self.ur_corner = np.array([x + a, y + b, z + b])
+        super().__init__(**kwargs)
         
     def compute_volume(self):
         """ Returning volume of geometry
@@ -201,7 +201,6 @@ class CylinderGeometry(Geometry):
         length
     """
     def __init__(self, x, y, z, a, b, c, r, l, **kwargs):
-        super().__init__(**kwargs)
         self.radius , self.length = r, l
         self.params = [x, y, z, a, b, c, r, l]
         self.label = 'cylinder'
@@ -209,6 +208,7 @@ class CylinderGeometry(Geometry):
         # TODO: Find ll_corner and ur_corner of cylinder
         #self.ll_corner = np.array([x - r, y - r, z - r])
         #self.ur_corner = np.array([x + r, y + r, z + r])
+        super().__init__(**kwargs)
         
     def compute_volume(self):
         """ Returning volume of geometry
@@ -235,6 +235,6 @@ class PlaneGeometry(Geometry):
     NB: argument 'side' has to be given, side E [over, below]
     """
     def __init__(self, a, b, c, d, **kwargs):
-        super().__init__(**kwargs)
         self.params = [a, b, c, d]
         self.label = 'plane'
+        super().__init__(**kwargs)
