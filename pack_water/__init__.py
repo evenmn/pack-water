@@ -1,107 +1,68 @@
 class PackWater:
-    def __init__(self, nummol, lencube=None, density=None):
-        """ Constructor for the WaterPack class.
-        
-        Parameters
-        ----------
-        nummol : int   
-            number of molecules. Note: this is not necessarily
-            equal to the number of particles in the MD-sim.
-        lencube : float
-            length of packed cube given in Å (Ångstrøm).
-        """
-        self.nummol = nummol
-        
-        # Convert from density to length of box
-        if lencube is None and density is None:
-            raise Warning("Warning! Neither lencube nor density is given, continue with density 1 g/cm^3")
-            density = 1.0
-            lencube = self.den2len(density=density)
-        elif lencube is not None and density is not None:
-            raise Warning("Warning! Both lencube and density are given, ignoring the box length.")
-            lencube = self.den2len(density=density)
-        elif density is not None:
-            lencube = self.den2len(density=density)
-        
-        self.lencube = lencube
+    def __init__(self, packmol_input="/data_files/input.inp",
+                       packmol_data ="/data_files/water_packmol.data"):
+        self.geometries = []
         
         # Store all "hidden" files in data_files
         import os
         this_dir, this_filename = os.path.split(__file__)
-        self.packmol_input  = this_dir + "/data_files/input.in"
-        self.packmol_data   = this_dir + "/data_files/water_packmol.data"
-        self.structure_data = this_dir + "/data_files/water.xyz"
-
+        self.packmol_input  = this_dir + packmol_input
+        self.packmol_data   = this_dir + packmol_data
         
-    def den2len(self, density):
-        """ Returns the length of the cube given the density.
-        
-        Parameters
-        ----------
-        density : float   
-            desired density of water. Unit g/cm^3
+    def append(self, geometry):
+        """ Append new water geometry
         """
-        self.density = density
-        self.mass_H2O = 18.0152     # Mass of H2O molecule, g/mol
-        NA = 6.02214075e23          # Avogadro's number, mol^-1
-        self.total_mass = self.nummol * self.mass_H2O / NA  # Total mass, g
-        self.volume = self.total_mass / density             # Volume, cm^3
-        length = self.volume**(1/3.)                        # Length, cm
-        lencube = length * 1e8                              # Length, Å
-        return lencube
+        self.geometries.append(geometry)
         
-        
-    def generate_packmol_input(self, tolerance=2.0, pbc=None):
-        """ Generate Packmol input script. 
-        
-        Parameters
-        ----------
-        tolerance str
-            minimum distance between molecules. 2.0 default.
-        pbc : float
-            width of gap at boundary given in [Å].
+    def generate_input(self, tolerance):
+        """ Generate Packmol input script.
         """
-        
-        self.lenbox = self.lencube
-        if pbc is not None:
-            self.lencube -= pbc
-        
-        f = open(self.packmol_input, "w")
-        f.write("tolerance {}\n".format(tolerance))
-        f.write("output {}\n".format(self.packmol_data))
-        f.write("filetype xyz\n")
-        f.write("structure {}\n".format(self.structure_data))
-        f.write("  number {}\n".format(self.nummol))
-        f.write("  inside cube 0. 0. 0. {}\n".format(self.lencube))
-        f.write("end structure\n")
-        f.close()
-        
+        with open(self.packmol_input, 'w') as f:
+            f.write("tolerance {}\n".format(tolerance))
+            f.write("filetype xyz\n")
+            f.write("output {}\n".format(self.packmol_data))
+            f.write("nloop0 1000\n")
+            for geometry in self.geometries:
+                f.write("\n")
+                f.write(geometry() + "\n")
+                
     def run_packmol(self):
         """ Run packmol.
         """
-        
         from os import system
         call_string = "packmol < {}".format(self.packmol_input)
         system(call_string)
         
-    def xyz2lmp(self, outfile):
-        """ Convert the packmol outfile (on xyz filetype) to Lammps readable
-        file.
+    def to_lammps(self, outfile, pbc):
+        """ Convert from xyz format to Lammps readable file.
         
         Arguments:
         ----------
         out : str
             output file after converting.
         """
+        import numpy as np
+        
+        # Find corners of system and total number of molecules
+        ll_corner = np.full(3, + np.inf)
+        ur_corner = np.full(3, - np.inf)
+        number = 0
+        for geometry in self.geometries:
+            ll_corner = np.where(geometry.ll_corner < ll_corner, geometry.ll_corner, ll_corner)
+            ur_corner = np.where(geometry.ur_corner > ur_corner, geometry.ur_corner, ur_corner)
+            number += geometry.number
+            
+        if pbc is not None:
+            ur_corner += pbc
         
         with open(outfile, 'w') as out:
             # Write header
-            out.write(outfile + " (Built by Packmol)\n\n")
-            out.write("{} atoms\n".format(3 * self.nummol))
+            out.write(outfile + " (Built with Packmol)\n\n")
+            out.write("{} atoms\n".format(3 * number))
             out.write("2 atom types\n")
-            out.write("0.0          {} xlo xhi\n".format(self.lenbox))
-            out.write("0.0          {} ylo yhi\n".format(self.lenbox))
-            out.write("0.0          {} zlo zhi\n\n".format(self.lenbox))
+            out.write("{}          {} xlo xhi\n".format(ll_corner[0], ur_corner[0]))
+            out.write("{}          {} ylo yhi\n".format(ll_corner[1], ur_corner[1]))
+            out.write("{}          {} zlo zhi\n\n".format(ll_corner[2], ur_corner[2]))
             out.write("Atoms\n\n")
             # Write positions
             with open(self.packmol_data, 'r') as infile:
@@ -112,28 +73,20 @@ class PackWater:
                         line = line.replace("O", "2")
                         out.write(line)
         
-    def __call__(self, outfile="water_config.data",
-                       pbc=None,
-                       tolerance=2.0):
-        """ Run the Packmol input script generated by self.packmol_gen.
-        """
-        
+    def __call__(self, outfile="water_config.data", pbc=None, tolerance=2.0):
         # Generate Packmol input script
-        self.generate_packmol_input(pbc=pbc, tolerance=tolerance)
-        print("Generated file: " + self.packmol_input)
+        self.generate_input(tolerance)
         
-        # Run packmol
+        # Run Packmol input script
         self.run_packmol()
-        print("Packmol script run and file {} generated"
-               .format(self.packmol_data))
         
-        # Convert from xyz-format to lammps-format
-        self.xyz2lmp(outfile)
-        print("Converted from xyz-filetype to LAMMPS-friendly filetype, {}"
-               .format(outfile))
+        # Convert to LAMMPS format
+        self.to_lammps(outfile, pbc)
                     
 if __name__ == "__main__":
-
-    ### EXAMPLE SCRIPT
-    packer = PackWater(nummol=2000, density=0.998)
-    packer()
+    from geometry import SphereGeometry, BoxGeometry
+    
+    packer = PackWater()
+    packer.append(BoxGeometry(0, 0, 0, 40, 40, 40, density=0.998,  side='in'))
+    packer.append(SphereGeometry(70, 20, 20, 20, number=2000,  side='in'))
+    packer(pbc=3.0, outfile="data.out")
