@@ -72,7 +72,7 @@ class CubeGeometry(Geometry):
     def compute_volume(self):
         """ Returning volume of geometry
         """
-        return length ** 3
+        return self.length ** 3
 
         
 class BoxGeometry(Geometry):
