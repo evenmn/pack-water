@@ -1,6 +1,9 @@
 class PackWater:
-    def __init__(self, packmol_input="/data_files/input.inp",
+    def __init__(self, filetype="xyz",
+                       packmol_input="/data_files/input.inp",
                        packmol_data ="/data_files/water_packmol.data"):
+        
+        self.filetype = filetype
         self.geometries = []
         
         # Store all "hidden" files in data_files
@@ -18,13 +21,13 @@ class PackWater:
         """ Generate Packmol input script.
         """
         with open(self.packmol_input, 'w') as f:
-            f.write("tolerance {}\n".format(tolerance))
-            f.write("filetype xyz\n")
-            f.write("output {}\n".format(self.packmol_data))
+            f.write(f"tolerance {tolerance}\n")
+            f.write(f"filetype {self.filetype}\n")
+            f.write(f"output {self.packmol_data}\n")
             f.write("nloop0 1000\n")
             for geometry in self.geometries:
                 f.write("\n")
-                f.write(geometry() + "\n")
+                f.write(geometry(self.filetype) + "\n")
                 
     def run_packmol(self):
         """ Run packmol.

@@ -24,13 +24,13 @@ class Geometry:
         # Store all "hidden" files in data_files
         import os
         this_dir, this_filename = os.path.split(__file__)
-        self.structure_data = this_dir + "/data_files/water.xyz"
+        self.structure_data = this_dir + "/data_files/water."
             
             
-    def __call__(self):
+    def __call__(self, filetype):
         """ Make structure.
         """
-        structure = "structure {}\n".format(self.structure_data)
+        structure = "structure {}\n".format(self.structure_data+filetype)
         structure += "  number {}\n".format(self.number)
         structure += "  {} {} ".format(self.side, self.label)
         for param in self.params:
@@ -217,7 +217,7 @@ class CylinderGeometry(Geometry):
         return 2 * pi * self.radius * self.length
     
 class PlaneGeometry(Geometry):
-    """ Make an plane defined by the equation
+    """ Make a plane defined by the equation
     
     ax  +  by  +  cz  =  d
     
@@ -238,3 +238,38 @@ class PlaneGeometry(Geometry):
         self.params = [a, b, c, d]
         self.label = 'plane'
         super().__init__(**kwargs)
+        
+class Fixed(Geometry):
+    """ Fix a structure. This does not need to be water.
+    
+    Parameters
+    ----------
+    filename : str
+        coordinate file of object that should be fixed. Has to be pdb-filetype
+    x : float
+        x-coordinate
+    y : float
+        y-coordinate
+    z : float
+        z-coordinate
+    a : float
+        rotation in x-direction
+    b : float
+        rotation in y-direction
+    g : float
+        rotation in z-direction
+    """
+    def __init__(self, filename, x, y, z, a=0, b=0, g=0, **kwargs):
+        self.filename = filename
+        self.params = [x, y, z, a, b, g]
+        super().__init__(**kwargs)
+        
+    def __call__(self, filetype):
+        structure = f"structure {self.filename}\n"
+        structure += "  number 1\n"
+        structure += "  center\n"
+        structure += "  fixed "
+        for param in self.params:
+            structure += f"{param} "
+        structure += "\nend structure\n"
+        return structure
