@@ -1,6 +1,8 @@
 # Pack water
 pack-water a package for water packing, which relies on [the Packmol package](http://m3g.iqm.unicamp.br/packmol/home.shtml). It is ment to be used as input to LAMMPS for molecular dynamics simulations. The inputs include number of molecules, length of box/density of water and whether or not the packed water should support periodic boundary conditions. However, the package supports cubic shapes only. 
 
+NB: This package will no longer be updated. Instead, the functionality is included in [the molecular builder](https://github.com/henriasv/molecular-builder), which is a more general python package for preparing systems for molecular dynamics simulations. 
+
 ## Installation
 First download the contents:
 ``` bash
